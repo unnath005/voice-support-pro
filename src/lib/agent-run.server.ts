@@ -15,7 +15,7 @@ export async function handleAgentTurn(
   const trace: ToolTrace[] = [];
 
   const result = await generateText({
-    model: gateway("google/gemini-2.5-flash"),
+    model: gateway("google/gemini-3.7-flash"),
     system: SYSTEM_PROMPT,
     messages,
     tools: buildTools(orders, actions, trace),
