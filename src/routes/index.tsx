@@ -45,7 +45,7 @@ const SUGGESTIONS = [
 function Console() {
   const callAgent = useServerFn(runAgentTurn);
   const [orders, setOrders] = useState<Order[]>(SEED_ORDERS);
-  const [selected, setSelected] = useState(SEED_ORDERS[0].id);
+  const [selected, setSelected] = useState(SEED_ORDERS[0]!.id);
   const [turns, setTurns] = useState<Turn[]>([
     { kind: "agent", text: "Hi Ananya, this is Vera from support. What can I help you with today?" },
   ]);
@@ -128,7 +128,7 @@ function Console() {
 
   const { supported, listening, interim, speaking, level, start, stop, speak, shutUp } = useSpeech(send);
 
-  const current = orders.find((o) => o.id === selected) ?? orders[0];
+  const current = (orders.find((o) => o.id === selected) ?? orders[0])!;
   const stats = useMemo(
     () => [
       { label: "Calls handled", value: "1,248", icon: PhoneCall },
