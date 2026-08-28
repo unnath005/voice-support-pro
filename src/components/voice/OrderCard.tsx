@@ -1,6 +1,7 @@
 import { Package, Truck, CheckCircle2, XCircle, RotateCcw, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STATUS_LABEL, formatINR, type Order, type OrderStatus } from "@/lib/orders.data";
+import { OrderBadges } from "./OrderBadges";
 
 const TONE: Record<OrderStatus, string> = {
   placed: "text-muted-foreground border-border",
@@ -54,11 +55,16 @@ export function OrderCard({
           {STATUS_LABEL[order.status]}
         </span>
       </div>
+
+      <OrderBadges badges={order.badges} className="mt-2.5" />
+
       <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <MapPin className="h-3.5 w-3.5" /> {order.city} · {order.courier}
         </span>
-        <span className="font-mono text-foreground/80">{formatINR(order.amount)}</span>
+        <span className="font-mono text-foreground/80">
+          {order.qty} item{order.qty === 1 ? "" : "s"} · {formatINR(order.amount)}
+        </span>
       </div>
     </button>
   );
