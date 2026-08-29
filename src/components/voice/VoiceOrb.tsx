@@ -1,24 +1,42 @@
-import { Mic, Square, Loader2, Volume2 } from "lucide-react";
+import { Mic, Square, Loader2, Volume2, Radio, Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { VoiceMode } from "@/hooks/useSpeech";
 
 type Props = {
   listening: boolean;
   thinking: boolean;
   speaking: boolean;
+  bargeIn: boolean;
   level: number;
   disabled?: boolean;
+  mode: VoiceMode;
+  onModeChange: (mode: VoiceMode) => void;
   onToggle: () => void;
 };
 
-export function VoiceOrb({ listening, thinking, speaking, level, disabled, onToggle }: Props) {
-  const active = listening || thinking || speaking;
-  const state = listening
-    ? "Listening"
-    : thinking
-      ? "Thinking"
-      : speaking
-        ? "Speaking"
-        : "Tap to talk";
+export function VoiceOrb({
+  listening,
+  thinking,
+  speaking,
+  bargeIn,
+  level,
+  disabled,
+  mode,
+  onModeChange,
+  onToggle,
+}: Props) {
+  const active = listening || thinking || speaking || bargeIn;
+  const state = bargeIn
+    ? "Barge-in · Interrupted"
+    : listening
+      ? "Listening"
+      : thinking
+        ? "Processing"
+        : speaking
+          ? "Speaking"
+          : "Idle · Tap to talk";
+
+  const accent = bargeIn ? "warning" : "primary";
 
   return (
     <div className="relative flex flex-col items-center gap-5">
@@ -29,9 +47,17 @@ export function VoiceOrb({ listening, thinking, speaking, level, disabled, onTog
         />
         {active && (
           <>
-            <span className="absolute h-36 w-36 rounded-full border border-primary/40 animate-ring" />
             <span
-              className="absolute h-36 w-36 rounded-full border border-primary/30 animate-ring"
+              className={cn(
+                "absolute h-36 w-36 rounded-full border animate-ring",
+                bargeIn ? "border-warning/50" : "border-primary/40",
+              )}
+            />
+            <span
+              className={cn(
+                "absolute h-36 w-36 rounded-full border animate-ring",
+                bargeIn ? "border-warning/40" : "border-primary/30",
+              )}
               style={{ animationDelay: "0.8s" }}
             />
           </>
@@ -43,13 +69,16 @@ export function VoiceOrb({ listening, thinking, speaking, level, disabled, onTog
           aria-label={listening ? "Stop listening" : "Start talking"}
           className={cn(
             "group relative flex h-32 w-32 items-center justify-center rounded-full border transition-all duration-300",
-            "border-primary/50 bg-surface-2/80 backdrop-blur-xl animate-drift",
+            "bg-surface-2/80 backdrop-blur-xl animate-drift",
+            bargeIn ? "border-warning" : "border-primary/50",
             "hover:scale-[1.04] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50",
-            active && "border-primary shadow-[var(--shadow-glow)]",
+            active && !bargeIn && "border-primary shadow-[var(--shadow-glow)]",
           )}
         >
-          <span className="absolute inset-2 rounded-full bg-primary/10" />
-          {thinking ? (
+          <span className={cn("absolute inset-2 rounded-full", bargeIn ? "bg-warning/10" : "bg-primary/10")} />
+          {bargeIn ? (
+            <Hand className="relative h-10 w-10 text-warning" />
+          ) : thinking ? (
             <Loader2 className="relative h-10 w-10 animate-spin text-primary" />
           ) : speaking ? (
             <Volume2 className="relative h-10 w-10 text-primary" />
@@ -69,8 +98,9 @@ export function VoiceOrb({ listening, thinking, speaking, level, disabled, onTog
             <span
               key={i}
               className={cn(
-                "w-[3px] rounded-full transition-all duration-150",
-                active ? "bg-primary/80" : "bg-border",
+                "w-[3px] rounded-full transition-all",
+                mode === "webrtc" ? "duration-75" : "duration-150",
+                active ? (bargeIn ? "bg-warning/80" : "bg-primary/80") : "bg-border",
               )}
               style={{ height: `${h}px` }}
             />
@@ -78,7 +108,44 @@ export function VoiceOrb({ listening, thinking, speaking, level, disabled, onTog
         })}
       </div>
 
-      <p className="font-display text-sm uppercase tracking-[0.28em] text-muted-foreground">{state}</p>
+      <p
+        className={cn(
+          "font-display text-sm uppercase tracking-[0.28em]",
+          bargeIn ? "text-warning" : "text-muted-foreground",
+        )}
+      >
+        {state}
+      </p>
+
+      <div
+        className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2/60 p-1"
+        role="group"
+        aria-label="Voice transport mode"
+      >
+        {(
+          [
+            { id: "webrtc" as const, label: "WebRTC stream", icon: Radio },
+            { id: "browser" as const, label: "Browser TTS/STT", icon: Mic },
+          ]
+        ).map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            aria-pressed={mode === m.id}
+            onClick={() => onModeChange(m.id)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium transition-colors",
+              mode === m.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <m.icon className="h-3 w-3" />
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <p className="-mt-3 text-[10px] text-muted-foreground">
+        {mode === "webrtc" ? "Simulated low-latency streaming · ~180ms turn latency" : "Standard browser speech APIs"}
+      </p>
     </div>
   );
 }
