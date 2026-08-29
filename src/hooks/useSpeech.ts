@@ -12,34 +12,49 @@ type Recognition = {
   onerror: ((e: any) => void) | null;
 };
 
+export type VoiceState = "idle" | "listening" | "processing" | "speaking" | "barge_in";
+export type VoiceMode = "webrtc" | "browser";
+
 function getRecognitionCtor(): (new () => Recognition) | null {
   if (typeof window === "undefined") return null;
   const w = window as any;
   return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
-export function useSpeech(onFinal: (text: string) => void) {
+export function useSpeech(onFinal: (text: string) => void, mode: VoiceMode = "browser") {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [speaking, setSpeaking] = useState(false);
+  const [bargeIn, setBargeIn] = useState(false);
   const [level, setLevel] = useState(0);
   const recRef = useRef<Recognition | null>(null);
   const finalRef = useRef(onFinal);
   finalRef.current = onFinal;
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
   useEffect(() => {
     setSupported(!!getRecognitionCtor());
   }, []);
 
   useEffect(() => {
-    if (!listening) {
+    if (!listening && !speaking) {
       setLevel(0);
       return;
     }
-    const id = setInterval(() => setLevel(0.25 + Math.random() * 0.75), 120);
+    const tick = modeRef.current === "webrtc" ? 70 : 120;
+    const id = setInterval(
+      () => setLevel(listening ? 0.25 + Math.random() * 0.75 : 0.2 + Math.random() * 0.4),
+      tick,
+    );
     return () => clearInterval(id);
-  }, [listening]);
+  }, [listening, speaking]);
+
+  const shutUp = useCallback(() => {
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    setSpeaking(false);
+  }, []);
 
   const stop = useCallback(() => {
     recRef.current?.stop();
@@ -51,7 +66,13 @@ export function useSpeech(onFinal: (text: string) => void) {
   const start = useCallback(() => {
     const Ctor = getRecognitionCtor();
     if (!Ctor) return;
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    // Barge-in: any new speech from the customer cuts the agent off instantly.
+    if (typeof window !== "undefined" && window.speechSynthesis?.speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      setBargeIn(true);
+      setTimeout(() => setBargeIn(false), 1400);
+    }
     const rec = new Ctor();
     rec.lang = "en-IN";
     rec.continuous = false;
@@ -63,6 +84,13 @@ export function useSpeech(onFinal: (text: string) => void) {
         const r = e.results[i];
         if (r.isFinal) finalText += r[0].transcript;
         else live += r[0].transcript;
+      }
+      // Streaming mode reacts to partials, so cut TTS as soon as sound arrives.
+      if (live && typeof window !== "undefined" && window.speechSynthesis?.speaking) {
+        window.speechSynthesis.cancel();
+        setSpeaking(false);
+        setBargeIn(true);
+        setTimeout(() => setBargeIn(false), 1400);
       }
       setInterim(live);
     };
@@ -85,7 +113,7 @@ export function useSpeech(onFinal: (text: string) => void) {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.03;
+    u.rate = modeRef.current === "webrtc" ? 1.12 : 1.03;
     u.pitch = 1.0;
     const voices = window.speechSynthesis.getVoices();
     const pick =
@@ -98,10 +126,5 @@ export function useSpeech(onFinal: (text: string) => void) {
     window.speechSynthesis.speak(u);
   }, []);
 
-  const shutUp = useCallback(() => {
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
-    setSpeaking(false);
-  }, []);
-
-  return { supported, listening, interim, speaking, level, start, stop, speak, shutUp };
+  return { supported, listening, interim, speaking, bargeIn, level, start, stop, speak, shutUp };
 }
