@@ -197,7 +197,7 @@ function Console() {
         });
         setTurns((p) => [
           ...p,
-          ...res.trace.map((t) => ({ kind: "tool" as const, label: t.label, detail: t.detail, failed: t.failed })),
+          ...res.trace.map((t) => ({ kind: "tool" as const, label: t.label, detail: t.detail, failed: !!t.failed })),
           { kind: "agent" as const, text: res.text },
         ]);
 
