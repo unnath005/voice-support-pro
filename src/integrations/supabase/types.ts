@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      handoff_sessions: {
+        Row: {
+          actions: Json
+          agent_name: string | null
+          connected_at: string | null
+          created_at: string
+          customer_name: string
+          customer_phone: string | null
+          ended_at: string | null
+          failures: Json
+          id: string
+          issue: string | null
+          order_id: string | null
+          order_status: string | null
+          orders: Json
+          sentiment: string
+          state: string
+          transcript: Json
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          agent_name?: string | null
+          connected_at?: string | null
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string | null
+          ended_at?: string | null
+          failures?: Json
+          id?: string
+          issue?: string | null
+          order_id?: string | null
+          order_status?: string | null
+          orders?: Json
+          sentiment?: string
+          state?: string
+          transcript?: Json
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          agent_name?: string | null
+          connected_at?: string | null
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string | null
+          ended_at?: string | null
+          failures?: Json
+          id?: string
+          issue?: string | null
+          order_id?: string | null
+          order_status?: string | null
+          orders?: Json
+          sentiment?: string
+          state?: string
+          transcript?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
