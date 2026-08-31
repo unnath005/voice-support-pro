@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Activity, PhoneCall, PhoneOff, Sparkle, ShieldCheck, Zap, LayoutDashboard, ShoppingBag } from "lucide-react";
+import {
+  Activity,
+  PhoneCall,
+  PhoneOff,
+  Sparkle,
+  ShieldCheck,
+  Zap,
+  LayoutDashboard,
+  ShoppingBag,
+  Headset,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { VoiceOrb } from "@/components/voice/VoiceOrb";
@@ -12,6 +22,9 @@ import { ProductCatalogDrawer } from "@/components/voice/ProductCatalogDrawer";
 import { OTPVerificationModal, type PendingVerification } from "@/components/voice/OTPVerificationModal";
 import { SentimentHeader, type Sentiment } from "@/components/voice/SentimentHeader";
 import { HandoffDashboard } from "@/components/voice/HandoffDashboard";
+import { HumanHandoffPanel } from "@/components/voice/HumanHandoffPanel";
+import { CallStateBadge } from "@/components/voice/CallStateBadge";
+import { createHandoffSession, patchHandoffSession, type CallState } from "@/lib/handoff";
 import { useSpeech, type VoiceMode } from "@/hooks/useSpeech";
 import { runAgentTurn } from "@/lib/agent.functions";
 import {
