@@ -109,10 +109,24 @@ function Console() {
   const [verification, setVerification] = useState<PendingVerification | null>(null);
   const queue = useRef<PendingVerification[]>([]);
 
+  // Real human-handoff call state machine
+  const [callState, setCallState] = useState<CallState>("ai_active");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [handoffReason, setHandoffReason] = useState("");
+  const [connectedSeconds, setConnectedSeconds] = useState(0);
+  const humanLive = callState === "connecting" || callState === "handoff_requested" || callState === "human_connected";
+
   useEffect(() => {
     const id = setInterval(() => setCallSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (callState !== "human_connected") return;
+    setConnectedSeconds(0);
+    const id = setInterval(() => setConnectedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [callState]);
 
   const history = useMemo(
     () =>
@@ -122,12 +136,53 @@ function Console() {
     [turns],
   );
 
-  const escalate = useCallback((reason: string) => {
-    setTransferring(true);
-    setHandoffOpen(true);
-    setTurns((p) => [...p, { kind: "system", text: `Transferring to Human Support… ${reason}` }]);
-    toast.warning("Transferring to Human Support…", { description: reason });
-  }, []);
+  const ctxRef = useRef({ turns, orders, sentiment, selected });
+  ctxRef.current = { turns, orders, sentiment, selected };
+
+  const escalate = useCallback(
+    (reason: string) => {
+      if (transferringRef.current) return;
+      transferringRef.current = true;
+      setTransferring(true);
+      setHandoffReason(reason);
+      setCallState("handoff_requested");
+      setHandoffOpen(true);
+      setTurns((p) => [...p, { kind: "system", text: `Transferring to Human Support… ${reason}` }]);
+      toast.warning("Connecting to Human Support…", { description: reason });
+      // Stop Vera from speaking the moment a human is being paged.
+      shutUpRef.current?.();
+
+      const ctx = ctxRef.current;
+      const order = ctx.orders.find((o) => o.id === ctx.selected) ?? ctx.orders[0];
+      const firstIssue =
+        ctx.turns.find((t) => t.kind === "user") && "text" in ctx.turns.find((t) => t.kind === "user")!
+          ? (ctx.turns.find((t) => t.kind === "user") as { text: string }).text
+          : reason;
+
+      createHandoffSession({
+        customer_name: "Aarav Sharma",
+        customer_phone: "+91 98•• ••2210",
+        order_id: order?.id ?? null,
+        order_status: order?.status ?? null,
+        issue: firstIssue,
+        sentiment: ctx.sentiment,
+        transcript: ctx.turns.map((t) =>
+          t.kind === "tool"
+            ? { role: "tool" as const, text: `${t.label}: ${t.detail}` }
+            : { role: t.kind === "user" ? ("customer" as const) : t.kind === "agent" ? ("vera" as const) : ("system" as const), text: t.text },
+        ),
+        actions: ctx.turns.filter((t) => t.kind === "tool" && !t.failed).map((t) => `${(t as { label: string }).label}`),
+        failures: ctx.turns.filter((t) => t.kind === "tool" && t.failed).map((t) => `${(t as { label: string }).label}`),
+        orders: ctx.orders.map((o) => ({ id: o.id, item: o.item, status: o.status, amount: o.amount })),
+      })
+        .then((s) => setSessionId(s.id))
+        .catch((e) => {
+          setCallState("no_agents");
+          toast.error("Could not reach the support queue", { description: e.message });
+        });
+    },
+    [],
+  );
 
   const runAction = useCallback((a: AgentAction) => {
     setOrders((prev) => {
