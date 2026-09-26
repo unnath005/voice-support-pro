@@ -24,10 +24,20 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
   const localRef = useRef<MediaStream | null>(null);
   const pendingIce = useRef<RTCIceCandidateInit[]>([]);
   const activeRef = useRef(false);
+  const subscribedRef = useRef(false);
+  const outbox = useRef<{ event: string; payload: object }[]>([]);
 
-  const post = useCallback((event: string, payload: unknown = {}) => {
-    channelRef.current?.send({ type: "broadcast", event, payload: { from: role, ...(payload as object) } });
-  }, [role]);
+  const post = useCallback(
+    (event: string, payload: unknown = {}) => {
+      const msg = { event, payload: { from: role, ...(payload as object) } };
+      if (!subscribedRef.current || !channelRef.current) {
+        outbox.current.push(msg);
+        return;
+      }
+      void channelRef.current.send({ type: "broadcast", ...msg });
+    },
+    [role],
+  );
 
   const teardown = useCallback(() => {
     pcRef.current?.getSenders().forEach((s) => s.track?.stop());
@@ -132,9 +142,15 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
         teardown();
         setStatus("ended");
       })
-      .subscribe();
+      .subscribe((s) => {
+        if (s !== "SUBSCRIBED") return;
+        subscribedRef.current = true;
+        for (const m of outbox.current.splice(0)) void channel.send({ type: "broadcast", ...m });
+      });
 
     return () => {
+      subscribedRef.current = false;
+      outbox.current = [];
       supabase.removeChannel(channel);
       channelRef.current = null;
       teardown();

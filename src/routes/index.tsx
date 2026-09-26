@@ -115,6 +115,8 @@ function Console() {
   const [handoffReason, setHandoffReason] = useState("");
   const [connectedSeconds, setConnectedSeconds] = useState(0);
   const humanLive = callState === "connecting" || callState === "handoff_requested" || callState === "human_connected";
+  const humanLiveRef = useRef(false);
+  humanLiveRef.current = humanLive;
 
   useEffect(() => {
     const id = setInterval(() => setCallSeconds((s) => s + 1), 1000);
@@ -138,6 +140,10 @@ function Console() {
 
   const ctxRef = useRef({ turns, orders, sentiment, selected });
   ctxRef.current = { turns, orders, sentiment, selected };
+  const transferringRef = useRef(false);
+  const shutUpRef = useRef<(() => void) | null>(null);
+
+
 
   const escalate = useCallback(
     (reason: string) => {
@@ -257,6 +263,11 @@ function Console() {
   const send = useCallback(
     async (text: string) => {
       if (!text.trim() || thinking) return;
+      // Once a human is on the line, Vera stays silent — no overlapping AI replies.
+      if (humanLiveRef.current) {
+        setTurns((p) => [...p, { kind: "user", text }]);
+        return;
+      }
       setTurns((p) => [...p, { kind: "user", text }]);
       setThinking(true);
       try {
@@ -303,6 +314,39 @@ function Console() {
   );
 
   const { supported, listening, interim, speaking, bargeIn, level, start, stop, speak, shutUp } = useSpeech(send, mode);
+  shutUpRef.current = shutUp;
+
+  // Keep the persisted handoff record in sync so the agent desk sees live context.
+  useEffect(() => {
+    if (!sessionId) return;
+    void patchHandoffSession(sessionId, { state: callState, sentiment }).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callState, sessionId]);
+
+  const resumeWithVera = useCallback(() => {
+    transferringRef.current = false;
+    setTransferring(false);
+    setTakenOver(false);
+    setCallState("ai_active");
+    setSessionId(null);
+    setToolFailures(0);
+    setTurns((p) => [...p, { kind: "system", text: "Back with Vera — how can I help?" }]);
+  }, []);
+
+  const requestCallback = useCallback(() => {
+    setCallState("callback_requested");
+    if (sessionId) void patchHandoffSession(sessionId, { state: "callback_requested" }).catch(() => undefined);
+    toast.success("Callback requested", { description: "A representative will call you back shortly." });
+  }, [sessionId]);
+
+  const retryHandoff = useCallback(() => {
+    transferringRef.current = false;
+    setSessionId(null);
+    setCallState("ai_active");
+    setTimeout(() => escalate(handoffReason || "Customer asked for a human agent."), 50);
+  }, [escalate, handoffReason]);
+
+
 
   const current = (orders.find((o) => o.id === selected) ?? orders[0])!;
   const stats = useMemo(
@@ -370,6 +414,15 @@ function Console() {
             >
               <LayoutDashboard className="h-3.5 w-3.5" /> Supervisor
             </button>
+            <a
+              href="/agent"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-accent/50 hover:text-accent"
+            >
+              <Headset className="h-3.5 w-3.5" /> Agent desk
+            </a>
+            <CallStateBadge state={callState} />
           </div>
         </div>
       </header>
@@ -382,6 +435,21 @@ function Console() {
           turns={history.length}
           transferring={transferring}
         />
+
+        {callState !== "ai_active" && (
+          <HumanHandoffPanel
+            sessionId={sessionId}
+            state={callState}
+            reason={handoffReason}
+            connectedSeconds={connectedSeconds}
+            onStateChange={setCallState}
+            onStayWithVera={resumeWithVera}
+            onRequestCallback={requestCallback}
+            onRetry={retryHandoff}
+          />
+        )}
+
+
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           <div className="panel relative overflow-hidden p-8">
