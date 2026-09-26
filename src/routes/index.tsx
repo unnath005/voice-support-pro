@@ -414,6 +414,15 @@ function Console() {
             >
               <LayoutDashboard className="h-3.5 w-3.5" /> Supervisor
             </button>
+            <a
+              href="/agent"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-accent/50 hover:text-accent"
+            >
+              <Headset className="h-3.5 w-3.5" /> Agent desk
+            </a>
+            <CallStateBadge state={callState} />
           </div>
         </div>
       </header>
@@ -426,6 +435,21 @@ function Console() {
           turns={history.length}
           transferring={transferring}
         />
+
+        {callState !== "ai_active" && (
+          <HumanHandoffPanel
+            sessionId={sessionId}
+            state={callState}
+            reason={handoffReason}
+            connectedSeconds={connectedSeconds}
+            onStateChange={setCallState}
+            onStayWithVera={resumeWithVera}
+            onRequestCallback={requestCallback}
+            onRetry={retryHandoff}
+          />
+        )}
+
+
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
           <div className="panel relative overflow-hidden p-8">
