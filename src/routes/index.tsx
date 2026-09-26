@@ -115,6 +115,8 @@ function Console() {
   const [handoffReason, setHandoffReason] = useState("");
   const [connectedSeconds, setConnectedSeconds] = useState(0);
   const humanLive = callState === "connecting" || callState === "handoff_requested" || callState === "human_connected";
+  const humanLiveRef = useRef(false);
+  humanLiveRef.current = humanLive;
 
   useEffect(() => {
     const id = setInterval(() => setCallSeconds((s) => s + 1), 1000);
