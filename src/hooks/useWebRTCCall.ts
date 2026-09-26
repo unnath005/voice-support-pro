@@ -50,6 +50,7 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
   }, []);
 
   const ensurePc = useCallback(async () => {
+    console.log("[rtc] ensurePc", role, !!pcRef.current);
     if (pcRef.current) return pcRef.current;
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localRef.current = stream;
@@ -97,7 +98,9 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
         setStatus("connecting");
         try {
           const pc = await ensurePc();
+          console.log("[rtc] got pc", pc.signalingState);
           const offer = await pc.createOffer();
+          console.log("[rtc] offer made");
           await pc.setLocalDescription(offer);
           console.log("[rtc] sending offer");
           post("offer", { sdp: offer });
