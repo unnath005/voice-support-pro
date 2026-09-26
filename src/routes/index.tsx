@@ -138,6 +138,10 @@ function Console() {
 
   const ctxRef = useRef({ turns, orders, sentiment, selected });
   ctxRef.current = { turns, orders, sentiment, selected };
+  const transferringRef = useRef(false);
+  const shutUpRef = useRef<(() => void) | null>(null);
+
+
 
   const escalate = useCallback(
     (reason: string) => {
