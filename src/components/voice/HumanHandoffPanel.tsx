@@ -38,6 +38,7 @@ export function HumanHandoffPanel({
   }, [sessionId, state, start]);
 
   useEffect(() => {
+    if (status === "connecting") onStateChange("connecting");
     if (status === "connected") onStateChange("human_connected");
     if (status === "ended") onStateChange("call_ended");
     // eslint-disable-next-line react-hooks/exhaustive-deps
