@@ -142,9 +142,15 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
         teardown();
         setStatus("ended");
       })
-      .subscribe();
+      .subscribe((s) => {
+        if (s !== "SUBSCRIBED") return;
+        subscribedRef.current = true;
+        for (const m of outbox.current.splice(0)) void channel.send({ type: "broadcast", ...m });
+      });
 
     return () => {
+      subscribedRef.current = false;
+      outbox.current = [];
       supabase.removeChannel(channel);
       channelRef.current = null;
       teardown();
