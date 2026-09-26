@@ -314,6 +314,39 @@ function Console() {
   );
 
   const { supported, listening, interim, speaking, bargeIn, level, start, stop, speak, shutUp } = useSpeech(send, mode);
+  shutUpRef.current = shutUp;
+
+  // Keep the persisted handoff record in sync so the agent desk sees live context.
+  useEffect(() => {
+    if (!sessionId) return;
+    void patchHandoffSession(sessionId, { state: callState, sentiment }).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callState, sessionId]);
+
+  const resumeWithVera = useCallback(() => {
+    transferringRef.current = false;
+    setTransferring(false);
+    setTakenOver(false);
+    setCallState("ai_active");
+    setSessionId(null);
+    setToolFailures(0);
+    setTurns((p) => [...p, { kind: "system", text: "Back with Vera — how can I help?" }]);
+  }, []);
+
+  const requestCallback = useCallback(() => {
+    setCallState("callback_requested");
+    if (sessionId) void patchHandoffSession(sessionId, { state: "callback_requested" }).catch(() => undefined);
+    toast.success("Callback requested", { description: "A representative will call you back shortly." });
+  }, [sessionId]);
+
+  const retryHandoff = useCallback(() => {
+    transferringRef.current = false;
+    setSessionId(null);
+    setCallState("ai_active");
+    setTimeout(() => escalate(handoffReason || "Customer asked for a human agent."), 50);
+  }, [escalate, handoffReason]);
+
+
 
   const current = (orders.find((o) => o.id === selected) ?? orders[0])!;
   const stats = useMemo(
