@@ -24,10 +24,20 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
   const localRef = useRef<MediaStream | null>(null);
   const pendingIce = useRef<RTCIceCandidateInit[]>([]);
   const activeRef = useRef(false);
+  const subscribedRef = useRef(false);
+  const outbox = useRef<{ event: string; payload: object }[]>([]);
 
-  const post = useCallback((event: string, payload: unknown = {}) => {
-    channelRef.current?.send({ type: "broadcast", event, payload: { from: role, ...(payload as object) } });
-  }, [role]);
+  const post = useCallback(
+    (event: string, payload: unknown = {}) => {
+      const msg = { event, payload: { from: role, ...(payload as object) } };
+      if (!subscribedRef.current || !channelRef.current) {
+        outbox.current.push(msg);
+        return;
+      }
+      void channelRef.current.send({ type: "broadcast", ...msg });
+    },
+    [role],
+  );
 
   const teardown = useCallback(() => {
     pcRef.current?.getSenders().forEach((s) => s.track?.stop());
