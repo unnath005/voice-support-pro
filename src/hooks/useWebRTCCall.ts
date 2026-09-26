@@ -60,6 +60,7 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
     };
     pc.ontrack = (e) => setRemoteStream(e.streams[0] ?? null);
     pc.onconnectionstatechange = () => {
+      console.log("[rtc] pcstate", role, pc.connectionState, pc.iceConnectionState);
       const s = pc.connectionState;
       if (s === "connected") setStatus("connected");
       else if (s === "failed") {
@@ -98,13 +99,16 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
           const pc = await ensurePc();
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
+          console.log("[rtc] sending offer");
           post("offer", { sdp: offer });
         } catch (e) {
+          console.log("[rtc] offer error", e);
           setStatus("failed");
           setError(e instanceof Error ? e.message : "Microphone unavailable");
         }
       })
       .on("broadcast", { event: "offer" }, async ({ payload }) => {
+        console.log("[rtc] offer received", role, activeRef.current);
         if (role !== "agent" || !activeRef.current) return;
         setStatus("connecting");
         try {
@@ -120,6 +124,7 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
         }
       })
       .on("broadcast", { event: "answer" }, async ({ payload }) => {
+        console.log("[rtc] answer received", role);
         if (role !== "customer") return;
         const pc = pcRef.current;
         if (!pc) return;
