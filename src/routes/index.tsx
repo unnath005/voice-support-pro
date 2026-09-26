@@ -261,6 +261,11 @@ function Console() {
   const send = useCallback(
     async (text: string) => {
       if (!text.trim() || thinking) return;
+      // Once a human is on the line, Vera stays silent — no overlapping AI replies.
+      if (humanLiveRef.current) {
+        setTurns((p) => [...p, { kind: "user", text }]);
+        return;
+      }
       setTurns((p) => [...p, { kind: "user", text }]);
       setThinking(true);
       try {
