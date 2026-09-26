@@ -50,7 +50,6 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
   }, []);
 
   const ensurePc = useCallback(async () => {
-    console.log("[rtc] ensurePc", role, !!pcRef.current);
     if (pcRef.current) return pcRef.current;
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     localRef.current = stream;
@@ -61,7 +60,6 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
     };
     pc.ontrack = (e) => setRemoteStream(e.streams[0] ?? null);
     pc.onconnectionstatechange = () => {
-      console.log("[rtc] pcstate", role, pc.connectionState, pc.iceConnectionState);
       const s = pc.connectionState;
       if (s === "connected") setStatus("connected");
       else if (s === "failed") {
@@ -93,25 +91,19 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
 
     channel
       .on("broadcast", { event: "agent-join" }, async () => {
-        console.log("[rtc] agent-join received", role, activeRef.current);
         if (role !== "customer" || !activeRef.current) return;
         setStatus("connecting");
         try {
           const pc = await ensurePc();
-          console.log("[rtc] got pc", pc.signalingState);
           const offer = await pc.createOffer();
-          console.log("[rtc] offer made");
           await pc.setLocalDescription(offer);
-          console.log("[rtc] sending offer");
           post("offer", { sdp: offer });
         } catch (e) {
-          console.log("[rtc] offer error", e);
           setStatus("failed");
           setError(e instanceof Error ? e.message : "Microphone unavailable");
         }
       })
       .on("broadcast", { event: "offer" }, async ({ payload }) => {
-        console.log("[rtc] offer received", role, activeRef.current);
         if (role !== "agent" || !activeRef.current) return;
         setStatus("connecting");
         try {
@@ -127,7 +119,6 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
         }
       })
       .on("broadcast", { event: "answer" }, async ({ payload }) => {
-        console.log("[rtc] answer received", role);
         if (role !== "customer") return;
         const pc = pcRef.current;
         if (!pc) return;
@@ -152,7 +143,6 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
         setStatus("ended");
       })
       .subscribe((s) => {
-        console.log("[rtc] channel status", role, s);
         if (s !== "SUBSCRIBED") return;
         subscribedRef.current = true;
         for (const m of outbox.current.splice(0)) void channel.send({ type: "broadcast", ...m });
@@ -173,7 +163,6 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
     try {
       activeRef.current = true;
       await ensurePc();
-      console.log("[rtc] start", role);
       if (role === "agent") {
         setStatus("connecting");
         post("agent-join");
