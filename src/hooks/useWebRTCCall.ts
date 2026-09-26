@@ -91,6 +91,7 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
 
     channel
       .on("broadcast", { event: "agent-join" }, async () => {
+        console.log("[rtc] agent-join received", role, activeRef.current);
         if (role !== "customer" || !activeRef.current) return;
         setStatus("connecting");
         try {
@@ -143,6 +144,7 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
         setStatus("ended");
       })
       .subscribe((s) => {
+        console.log("[rtc] channel status", role, s);
         if (s !== "SUBSCRIBED") return;
         subscribedRef.current = true;
         for (const m of outbox.current.splice(0)) void channel.send({ type: "broadcast", ...m });
@@ -163,6 +165,7 @@ export function useWebRTCCall(sessionId: string | null, role: "customer" | "agen
     try {
       activeRef.current = true;
       await ensurePc();
+      console.log("[rtc] start", role);
       if (role === "agent") {
         setStatus("connecting");
         post("agent-join");
