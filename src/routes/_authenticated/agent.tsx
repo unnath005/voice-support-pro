@@ -30,7 +30,7 @@ import { formatINR } from "@/lib/orders.data";
 import { redactPII } from "@/components/voice/Transcript";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/agent")({
+export const Route = createFileRoute("/_authenticated/agent")({
   head: () => ({
     meta: [
       { title: "Support Agent Desk · VERA Live Handoff" },
