@@ -14,12 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_profiles: {
+        Row: {
+          available: boolean
+          created_at: string
+          display_name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          display_name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          display_name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      callback_requests: {
+        Row: {
+          agent_id: string | null
+          created_at: string
+          customer_name: string
+          id: string
+          last_error: string | null
+          phone: string
+          reason: string | null
+          session_id: string | null
+          status: string
+          twilio_call_sid: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string
+          customer_name?: string
+          id?: string
+          last_error?: string | null
+          phone: string
+          reason?: string | null
+          session_id?: string | null
+          status?: string
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string
+          customer_name?: string
+          id?: string
+          last_error?: string | null
+          phone?: string
+          reason?: string | null
+          session_id?: string | null
+          status?: string
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          lifetime_value: number
+          name: string
+          notes: string | null
+          phone: string
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lifetime_value?: number
+          name: string
+          notes?: string | null
+          phone: string
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lifetime_value?: number
+          name?: string
+          notes?: string | null
+          phone?: string
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       handoff_sessions: {
         Row: {
           actions: Json
           agent_name: string | null
+          channel: string
           connected_at: string | null
           created_at: string
+          customer_id: string | null
           customer_name: string
           customer_phone: string | null
           ended_at: string | null
@@ -32,13 +142,16 @@ export type Database = {
           sentiment: string
           state: string
           transcript: Json
+          twilio_call_sid: string | null
           updated_at: string
         }
         Insert: {
           actions?: Json
           agent_name?: string | null
+          channel?: string
           connected_at?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
           ended_at?: string | null
@@ -51,13 +164,16 @@ export type Database = {
           sentiment?: string
           state?: string
           transcript?: Json
+          twilio_call_sid?: string | null
           updated_at?: string
         }
         Update: {
           actions?: Json
           agent_name?: string | null
+          channel?: string
           connected_at?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
           ended_at?: string | null
@@ -70,7 +186,77 @@ export type Database = {
           sentiment?: string
           state?: string
           transcript?: Json
+          twilio_call_sid?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      phone_calls: {
+        Row: {
+          agent_id: string | null
+          callback_id: string | null
+          created_at: string
+          customer_id: string | null
+          direction: string
+          duration_seconds: number | null
+          from_number: string | null
+          id: string
+          kind: string
+          session_id: string | null
+          status: string
+          to_number: string | null
+          twilio_call_sid: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          callback_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          direction: string
+          duration_seconds?: number | null
+          from_number?: string | null
+          id?: string
+          kind?: string
+          session_id?: string | null
+          status?: string
+          to_number?: string | null
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          callback_id?: string | null
+          created_at?: string
+          customer_id?: string | null
+          direction?: string
+          duration_seconds?: number | null
+          from_number?: string | null
+          id?: string
+          kind?: string
+          session_id?: string | null
+          status?: string
+          to_number?: string | null
+          twilio_call_sid?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -79,10 +265,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "agent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -209,6 +401,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "agent"],
+    },
   },
 } as const
