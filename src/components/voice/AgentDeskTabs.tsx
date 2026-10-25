@@ -132,7 +132,7 @@ export function CustomersPanel() {
       email: form.email.trim() || null,
       city: form.city.trim() || null,
     });
-    if (error) return toast.error("Could not add customer", { description: error.message });
+    if (error) { toast.error("Could not add customer", { description: error.message }); return; }
     toast.success("Customer added");
     setForm({ name: "", phone: "", email: "", city: "" });
     void load();
@@ -198,7 +198,7 @@ export function SettingsPanel({ userId, onSaved }: { userId: string; onSaved: (n
     const { error } = await supabase
       .from("agent_profiles")
       .upsert({ user_id: userId, display_name: name.trim() || "Support agent", phone: phone.trim() || null, available });
-    if (error) return toast.error("Could not save", { description: error.message });
+    if (error) { toast.error("Could not save", { description: error.message }); return; }
     onSaved(name.trim() || "Support agent");
     toast.success("Settings saved");
   }

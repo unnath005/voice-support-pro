@@ -2,11 +2,11 @@
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 
 export function twilioEnv() {
-  const lovableKey = process.env.LOVABLE_API_KEY;
-  const twilioKey = process.env.TWILIO_API_KEY;
-  const from = process.env.TWILIO_PHONE_NUMBER;
-  const token = process.env.TWILIO_WEBHOOK_TOKEN;
-  const appUrl = (process.env.PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  const twilioKey = process.env["TWILIO_API_KEY"];
+  const from = process.env["TWILIO_PHONE_NUMBER"];
+  const token = process.env["TWILIO_WEBHOOK_TOKEN"];
+  const appUrl = (process.env["PUBLIC_APP_URL"] ?? "").replace(/\/$/, "");
   if (!lovableKey) throw new Error("LOVABLE_API_KEY is not configured");
   if (!twilioKey) throw new Error("TWILIO_API_KEY is not configured (connect Twilio)");
   if (!from) throw new Error("TWILIO_PHONE_NUMBER is not configured");
@@ -24,7 +24,7 @@ export async function twilioRequest(path: string, params: Record<string, string>
       "X-Connection-Api-Key": twilioKey,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: method === "GET" ? undefined : new URLSearchParams(params),
+    body: method === "GET" ? null : new URLSearchParams(params),
   });
   const text = await res.text();
   if (!res.ok) {
@@ -37,7 +37,7 @@ export async function twilioRequest(path: string, params: Record<string, string>
     }
     throw new Error(`Twilio error ${res.status}: ${msg}`);
   }
-  return JSON.parse(text) as Record<string, any>;
+  return JSON.parse(text) as any;
 }
 
 export function xml(s: string) {
@@ -52,7 +52,7 @@ export function twimlResponse(body: string) {
 
 /** Constant-time check of the shared token Twilio sends back in webhook URLs. */
 export function verifyWebhookToken(request: Request) {
-  const expected = process.env.TWILIO_WEBHOOK_TOKEN ?? "";
+  const expected = process.env["TWILIO_WEBHOOK_TOKEN"] ?? "";
   const got = new URL(request.url).searchParams.get("key") ?? "";
   if (!expected || got.length !== expected.length) return false;
   let diff = 0;
