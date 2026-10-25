@@ -24,7 +24,7 @@ import { SentimentHeader, type Sentiment } from "@/components/voice/SentimentHea
 import { HandoffDashboard } from "@/components/voice/HandoffDashboard";
 import { HumanHandoffPanel } from "@/components/voice/HumanHandoffPanel";
 import { CallStateBadge } from "@/components/voice/CallStateBadge";
-import { createHandoffSession, patchHandoffSession, type CallState } from "@/lib/handoff";
+import { createCallbackRequest, createHandoffSession, patchHandoffSession, type CallState } from "@/lib/handoff";
 import { useSpeech, type VoiceMode } from "@/hooks/useSpeech";
 import { runAgentTurn } from "@/lib/agent.functions";
 import {
@@ -333,11 +333,24 @@ function Console() {
     setTurns((p) => [...p, { kind: "system", text: "Back with Vera — how can I help?" }]);
   }, []);
 
-  const requestCallback = useCallback(() => {
-    setCallState("callback_requested");
-    if (sessionId) void patchHandoffSession(sessionId, { state: "callback_requested" }).catch(() => undefined);
-    toast.success("Callback requested", { description: "A representative will call you back shortly." });
-  }, [sessionId]);
+  const requestCallback = useCallback(
+    async (phone: string) => {
+      try {
+        await createCallbackRequest({
+          sessionId,
+          customerName: "Aarav Sharma",
+          phone,
+          reason: handoffReason || "Customer asked for a callback",
+        });
+        setCallState("callback_requested");
+        if (sessionId) void patchHandoffSession(sessionId, { state: "callback_requested" }).catch(() => undefined);
+        toast.success("Callback requested", { description: "A representative will call you back shortly." });
+      } catch (e) {
+        toast.error("Could not request a callback", { description: e instanceof Error ? e.message : String(e) });
+      }
+    },
+    [sessionId, handoffReason],
+  );
 
   const retryHandoff = useCallback(() => {
     transferringRef.current = false;

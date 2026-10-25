@@ -36,6 +36,9 @@ export type HandoffSession = {
   orders: { id: string; item: string; status: string; amount: number }[];
   state: CallState;
   agent_name: string | null;
+  channel?: string;
+  twilio_call_sid?: string | null;
+  customer_id?: string | null;
   created_at: string;
   connected_at: string | null;
   ended_at: string | null;
@@ -83,4 +86,19 @@ export function formatDuration(seconds: number) {
     .toString()
     .padStart(2, "0");
   return `${m}:${s}`;
+}
+
+export async function createCallbackRequest(input: {
+  sessionId: string | null;
+  customerName: string;
+  phone: string;
+  reason: string;
+}) {
+  const { error } = await supabase.from("callback_requests").insert({
+    session_id: input.sessionId,
+    customer_name: input.customerName,
+    phone: input.phone.trim(),
+    reason: input.reason.slice(0, 500),
+  });
+  if (error) throw new Error(error.message);
 }
