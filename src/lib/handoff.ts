@@ -87,3 +87,18 @@ export function formatDuration(seconds: number) {
     .padStart(2, "0");
   return `${m}:${s}`;
 }
+
+export async function createCallbackRequest(input: {
+  sessionId: string | null;
+  customerName: string;
+  phone: string;
+  reason: string;
+}) {
+  const { error } = await supabase.from("callback_requests").insert({
+    session_id: input.sessionId,
+    customer_name: input.customerName,
+    phone: input.phone.trim(),
+    reason: input.reason.slice(0, 500),
+  });
+  if (error) throw new Error(error.message);
+}

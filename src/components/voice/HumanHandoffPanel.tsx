@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Headset, Loader2, Mic, MicOff, PhoneOff, PhoneMissed, RotateCcw, Bot, PhoneIncoming } from "lucide-react";
 import { CallStateBadge } from "./CallStateBadge";
 import { RemoteAudio } from "./RemoteAudio";
@@ -24,7 +24,7 @@ export function HumanHandoffPanel({
   connectedSeconds: number;
   onStateChange: (s: CallState) => void;
   onStayWithVera: () => void;
-  onRequestCallback: () => void;
+  onRequestCallback: (phone: string) => void;
   onRetry: () => void;
 }) {
   const { status, error, muted, remoteStream, start, hangUp, toggleMute } = useWebRTCCall(sessionId, "customer");
@@ -53,6 +53,7 @@ export function HumanHandoffPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, status]);
 
+  const [phone, setPhone] = useState("+919876502210");
   const waiting = state === "handoff_requested" || state === "connecting";
 
   return (
@@ -139,9 +140,16 @@ export function HumanHandoffPanel({
               >
                 <Bot className="h-3.5 w-3.5" /> Continue with Vera
               </button>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                aria-label="Callback phone number"
+                className="panel-inset w-44 px-3 py-2 font-mono text-xs"
+              />
               <button
                 type="button"
-                onClick={onRequestCallback}
+                disabled={!/^\+?[0-9 ]{8,16}$/.test(phone.trim())}
+                onClick={() => onRequestCallback(phone)}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground"
               >
                 Request a callback
@@ -152,7 +160,7 @@ export function HumanHandoffPanel({
 
         {state === "callback_requested" && (
           <p className="text-sm text-accent">
-            Callback logged. A representative will call you back on the number on file.
+            Callback logged. A representative will call your phone shortly.
           </p>
         )}
 
