@@ -29,6 +29,11 @@ import {
 import { formatINR } from "@/lib/orders.data";
 import { redactPII } from "@/components/voice/Transcript";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { LogOut } from "lucide-react";
+import { answerPhoneCall } from "@/lib/telephony.functions";
+import { CallbacksPanel, CustomersPanel, SettingsPanel } from "@/components/voice/AgentDeskTabs";
 
 export const Route = createFileRoute("/_authenticated/agent")({
   head: () => ({

@@ -36,6 +36,9 @@ export type HandoffSession = {
   orders: { id: string; item: string; status: string; amount: number }[];
   state: CallState;
   agent_name: string | null;
+  channel?: string;
+  twilio_call_sid?: string | null;
+  customer_id?: string | null;
   created_at: string;
   connected_at: string | null;
   ended_at: string | null;
