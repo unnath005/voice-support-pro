@@ -52,12 +52,25 @@ export const Route = createFileRoute("/_authenticated/agent")({
 });
 
 function AgentDesk() {
+  const { user } = Route.useRouteContext();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<"live" | "callbacks" | "customers" | "settings">("live");
   const [sessions, setSessions] = useState<HandoffSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
-  const [agentName] = useState("Riya · Support L2");
+  const [agentName, setAgentName] = useState("Support agent");
+  const answerPhone = useServerFn(answerPhoneCall);
   const { status, error, muted, remoteStream, start, hangUp, toggleMute } = useWebRTCCall(activeId, "agent");
   const joined = useRef<string | null>(null);
+
+  useEffect(() => {
+    void supabase
+      .from("agent_profiles")
+      .select("display_name")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => data && setAgentName(data.display_name));
+  }, [user.id]);
 
   const refresh = useCallback(() => {
     listWaitingSessions()
@@ -104,10 +117,19 @@ function AgentDesk() {
     async (s: HandoffSession) => {
       setActiveId(s.id);
       joined.current = s.id;
+      if (s.channel === "phone") {
+        try {
+          await answerPhone({ data: { sessionId: s.id } });
+          toast.success("Calling your phone", { description: "Answer it to talk to the caller." });
+        } catch (e) {
+          toast.error("Could not connect the phone call", { description: e instanceof Error ? e.message : String(e) });
+        }
+        return;
+      }
       await patchHandoffSession(s.id, { state: "connecting", agent_name: agentName });
       setTimeout(() => void start(), 150);
     },
-    [agentName, start],
+    [agentName, start, answerPhone],
   );
 
   const callState: CallState =
@@ -145,10 +167,49 @@ function AgentDesk() {
             >
               <Sparkle className="h-3.5 w-3.5" /> Customer console
             </a>
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate({ to: "/auth" });
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sign out
+            </button>
           </div>
         </div>
+        <nav className="mx-auto flex max-w-7xl gap-1 px-6 pb-3">
+          {(
+            [
+              ["live", "Live calls"],
+              ["callbacks", "Callbacks"],
+              ["customers", "Customers"],
+              ["settings", "Settings"],
+            ] as const
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setTab(k)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs transition-colors",
+                tab === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </header>
 
+      {tab !== "live" ? (
+        <main className="mx-auto max-w-7xl px-6 pb-16 pt-6">
+          {tab === "callbacks" && <CallbacksPanel />}
+          {tab === "customers" && <CustomersPanel />}
+          {tab === "settings" && <SettingsPanel userId={user.id} onSaved={setAgentName} />}
+        </main>
+      ) : (
       <main className="mx-auto grid max-w-7xl gap-6 px-6 pb-16 pt-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="space-y-3">
           <h2 className="font-display text-xs uppercase tracking-[0.24em] text-muted-foreground">
@@ -339,6 +400,7 @@ function AgentDesk() {
           </div>
         )}
       </main>
+      )}
     </div>
   );
 }
