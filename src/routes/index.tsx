@@ -91,6 +91,7 @@ const ACTION_LABEL: Record<string, string> = {
 
 function Console() {
   const callAgent = useServerFn(runAgentTurn);
+  const loadCustomer = useServerFn(getCustomerByPhone);
   const [orders, setOrders] = useState<Order[]>(SEED_ORDERS);
   const [selected, setSelected] = useState(SEED_ORDERS[0]!.id);
   const [turns, setTurns] = useState<Turn[]>([
@@ -118,6 +119,14 @@ function Console() {
   const humanLive = callState === "connecting" || callState === "handoff_requested" || callState === "human_connected";
   const humanLiveRef = useRef(false);
   humanLiveRef.current = humanLive;
+
+  // The caller's real record from the customer database
+  const [customer, setCustomer] = useState<{ id: string; name: string; phone: string; tier: string } | null>(null);
+  useEffect(() => {
+    loadCustomer({ data: { phone: "+919876502210" } })
+      .then((c) => c && setCustomer(c))
+      .catch(() => undefined);
+  }, [loadCustomer]);
 
   useEffect(() => {
     const id = setInterval(() => setCallSeconds((s) => s + 1), 1000);
