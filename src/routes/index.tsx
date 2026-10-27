@@ -25,6 +25,7 @@ import { HandoffDashboard } from "@/components/voice/HandoffDashboard";
 import { HumanHandoffPanel } from "@/components/voice/HumanHandoffPanel";
 import { CallStateBadge } from "@/components/voice/CallStateBadge";
 import { createCallbackRequest, createHandoffSession, patchHandoffSession, type CallState } from "@/lib/handoff";
+import { getCustomerByPhone } from "@/lib/customer.functions";
 import { useSpeech, type VoiceMode } from "@/hooks/useSpeech";
 import { runAgentTurn } from "@/lib/agent.functions";
 import {
@@ -90,6 +91,7 @@ const ACTION_LABEL: Record<string, string> = {
 
 function Console() {
   const callAgent = useServerFn(runAgentTurn);
+  const loadCustomer = useServerFn(getCustomerByPhone);
   const [orders, setOrders] = useState<Order[]>(SEED_ORDERS);
   const [selected, setSelected] = useState(SEED_ORDERS[0]!.id);
   const [turns, setTurns] = useState<Turn[]>([
@@ -117,6 +119,14 @@ function Console() {
   const humanLive = callState === "connecting" || callState === "handoff_requested" || callState === "human_connected";
   const humanLiveRef = useRef(false);
   humanLiveRef.current = humanLive;
+
+  // The caller's real record from the customer database
+  const [customer, setCustomer] = useState<{ id: string; name: string; phone: string; tier: string } | null>(null);
+  useEffect(() => {
+    loadCustomer({ data: { phone: "+919876502210" } })
+      .then((c) => c && setCustomer(c))
+      .catch(() => undefined);
+  }, [loadCustomer]);
 
   useEffect(() => {
     const id = setInterval(() => setCallSeconds((s) => s + 1), 1000);
@@ -166,8 +176,9 @@ function Console() {
           : reason;
 
       createHandoffSession({
-        customer_name: "Aarav Sharma",
-        customer_phone: "+91 98•• ••2210",
+        customer_name: customer?.name ?? "Guest customer",
+        customer_phone: customer?.phone ?? "+91 98•• ••2210",
+        customer_id: customer?.id ?? null,
         order_id: order?.id ?? null,
         order_status: order?.status ?? null,
         issue: firstIssue,
@@ -187,7 +198,7 @@ function Console() {
           toast.error("Could not reach the support queue", { description: e.message });
         });
     },
-    [],
+    [customer],
   );
 
   const runAction = useCallback((a: AgentAction) => {
@@ -338,7 +349,7 @@ function Console() {
       try {
         await createCallbackRequest({
           sessionId,
-          customerName: "Aarav Sharma",
+          customerName: customer?.name ?? "Guest customer",
           phone,
           reason: handoffReason || "Customer asked for a callback",
         });
@@ -391,7 +402,9 @@ function Console() {
             </span>
             <div>
               <p className="font-display text-sm font-semibold tracking-tight">VERA · Agentic Voice Desk</p>
-              <p className="text-[11px] text-muted-foreground">Retail order tracking & support automation</p>
+              <p className="text-[11px] text-muted-foreground">
+                {customer ? `Retail support · ${customer.name} · ${customer.tier} customer` : "Retail order tracking & support automation"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -458,6 +471,7 @@ function Console() {
             onStateChange={setCallState}
             onStayWithVera={resumeWithVera}
             onRequestCallback={requestCallback}
+            customerPhone={customer?.phone}
             onRetry={retryHandoff}
           />
         )}

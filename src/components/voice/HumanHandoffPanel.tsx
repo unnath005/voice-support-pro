@@ -13,6 +13,7 @@ export function HumanHandoffPanel({
   state,
   reason,
   connectedSeconds,
+  customerPhone,
   onStateChange,
   onStayWithVera,
   onRequestCallback,
@@ -22,6 +23,7 @@ export function HumanHandoffPanel({
   state: CallState;
   reason: string;
   connectedSeconds: number;
+  customerPhone?: string | undefined;
   onStateChange: (s: CallState) => void;
   onStayWithVera: () => void;
   onRequestCallback: (phone: string) => void;
@@ -53,7 +55,7 @@ export function HumanHandoffPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, status]);
 
-  const [phone, setPhone] = useState("+919876502210");
+  const [phone, setPhone] = useState(customerPhone ?? "");
   const waiting = state === "handoff_requested" || state === "connecting";
 
   return (
