@@ -25,6 +25,7 @@ import { HandoffDashboard } from "@/components/voice/HandoffDashboard";
 import { HumanHandoffPanel } from "@/components/voice/HumanHandoffPanel";
 import { CallStateBadge } from "@/components/voice/CallStateBadge";
 import { createCallbackRequest, createHandoffSession, patchHandoffSession, type CallState } from "@/lib/handoff";
+import { getCustomerByPhone } from "@/lib/customer.functions";
 import { useSpeech, type VoiceMode } from "@/hooks/useSpeech";
 import { runAgentTurn } from "@/lib/agent.functions";
 import {

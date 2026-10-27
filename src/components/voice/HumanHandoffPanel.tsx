@@ -55,7 +55,7 @@ export function HumanHandoffPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, status]);
 
-  const [phone, setPhone] = useState("+919876502210");
+  const [phone, setPhone] = useState(customerPhone ?? "");
   const waiting = state === "handoff_requested" || state === "connecting";
 
   return (
