@@ -13,6 +13,7 @@ export function HumanHandoffPanel({
   state,
   reason,
   connectedSeconds,
+  customerPhone,
   onStateChange,
   onStayWithVera,
   onRequestCallback,
@@ -22,6 +23,7 @@ export function HumanHandoffPanel({
   state: CallState;
   reason: string;
   connectedSeconds: number;
+  customerPhone?: string;
   onStateChange: (s: CallState) => void;
   onStayWithVera: () => void;
   onRequestCallback: (phone: string) => void;
