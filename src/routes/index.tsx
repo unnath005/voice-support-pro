@@ -176,8 +176,9 @@ function Console() {
           : reason;
 
       createHandoffSession({
-        customer_name: "Aarav Sharma",
-        customer_phone: "+91 98•• ••2210",
+        customer_name: customer?.name ?? "Guest customer",
+        customer_phone: customer?.phone ?? "+91 98•• ••2210",
+        customer_id: customer?.id ?? null,
         order_id: order?.id ?? null,
         order_status: order?.status ?? null,
         issue: firstIssue,
