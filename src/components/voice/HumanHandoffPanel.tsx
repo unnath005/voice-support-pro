@@ -23,7 +23,7 @@ export function HumanHandoffPanel({
   state: CallState;
   reason: string;
   connectedSeconds: number;
-  customerPhone?: string;
+  customerPhone?: string | undefined;
   onStateChange: (s: CallState) => void;
   onStayWithVera: () => void;
   onRequestCallback: (phone: string) => void;
