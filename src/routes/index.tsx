@@ -198,7 +198,7 @@ function Console() {
           toast.error("Could not reach the support queue", { description: e.message });
         });
     },
-    [],
+    [customer],
   );
 
   const runAction = useCallback((a: AgentAction) => {
@@ -349,7 +349,7 @@ function Console() {
       try {
         await createCallbackRequest({
           sessionId,
-          customerName: "Aarav Sharma",
+          customerName: customer?.name ?? "Guest customer",
           phone,
           reason: handoffReason || "Customer asked for a callback",
         });
@@ -402,7 +402,9 @@ function Console() {
             </span>
             <div>
               <p className="font-display text-sm font-semibold tracking-tight">VERA · Agentic Voice Desk</p>
-              <p className="text-[11px] text-muted-foreground">Retail order tracking & support automation</p>
+              <p className="text-[11px] text-muted-foreground">
+                {customer ? `Retail support · ${customer.name} · ${customer.tier} customer` : "Retail order tracking & support automation"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -469,6 +471,7 @@ function Console() {
             onStateChange={setCallState}
             onStayWithVera={resumeWithVera}
             onRequestCallback={requestCallback}
+            customerPhone={customer?.phone}
             onRetry={retryHandoff}
           />
         )}
